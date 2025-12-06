@@ -16,7 +16,7 @@ from utils.bundle_id import gen_release_bundle_hash
 
 router = APIRouter(
     prefix="/api/v1/release",
-    tags=["release"],
+    tags=["Release History APIs"],
     dependencies=[Depends(require_basic_auth)],
 )
 

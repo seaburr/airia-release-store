@@ -31,7 +31,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         init_db(app_settings.database_url, echo=app_settings.sql_echo)
         yield
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(
+        title="Airia Release Store",
+        lifespan=lifespan,
+    )
     app.state.settings = app_settings
 
     @app.middleware("http")
@@ -65,15 +68,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @app.get("/")
+    @app.get("/", tags=["Lifecycle APIs"])
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/livez")
+    @app.get("/livez", tags=["Lifecycle APIs"])
     def livez():
         return {"status": "ok"}
 
-    @app.get("/readyz")
+    @app.get("/readyz", tags=["Lifecycle APIs"])
     def readyz(session: SQLSession = Depends(get_session)):
         try:
             health = session.get(HealthStatus, 1)
@@ -93,7 +96,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
 
     app.include_router(releases.router)
-    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
+    # Expose Prometheus metrics and tag them for docs clarity
+    Instrumentator().instrument(app).expose(
+        app, endpoint="/metrics", tags=["Prometheus Metrics API"]
+    )
     return app
 
 
