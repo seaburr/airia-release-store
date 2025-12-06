@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class Release(BaseModel):
     environment: str
     versions: dict[str, str]
@@ -12,7 +13,7 @@ class Release(BaseModel):
                     "versions": {
                         "service-a": "1.0.1",
                         "service-b": "2.8.3",
-                    }
+                    },
                 }
             ]
         }

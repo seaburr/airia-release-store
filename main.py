@@ -1,44 +1,93 @@
-from typing import Annotated
-from datetime import datetime, timezone
-import hashlib
-import json
-from fastapi import FastAPI, Depends, HTTPException, Query
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from contextlib import asynccontextmanager
+import logging
+import time
+
+from fastapi import FastAPI, Request
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.responses import RedirectResponse
-
-from models.release import Release
-from models.timespan import Timespan
-from database.releasebundle import ReleaseBundle
-from utils.bundle_id import gen_release_bundle_hash
 import uvicorn
 
-app = FastAPI()
+from utils.config import Settings, get_settings
+from database.session import init_db
+from routers import releases
+from utils.logging_config import configure_logging
 
-@app.get("/")
-def root():
-    return RedirectResponse(url="/docs")
+logger = logging.getLogger(__name__)
 
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
 
-@app.post("/api/v1/release/create")
-def create_release(release: Release):
-    release_id = gen_release_bundle_hash(release.environment, release.versions)
-    return {"release_hash": release_id, "status": "created"}
+def _configure_logging(level: str) -> None:
+    configure_logging(level=level)
 
-@app.get("/api/v1/release/history/{environment}")
-def get_release_history(environment: str, start_date: datetime, end_date: datetime):
-    return Timespan(start_date=start_date, end_date=end_date)
 
-@app.delete("/api/v1/release/delete/{deployment_hash}")
-def delete_release(deployment_hash: str):
-    return f"deleted {deployment_hash}"
+def create_app(settings: Settings | None = None) -> FastAPI:
+    app_settings = settings or get_settings()
+    _configure_logging(app_settings.logging_level)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        init_db(app_settings.database_url)
+        yield
+
+    app = FastAPI(lifespan=lifespan)
+    app.state.settings = app_settings
+
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        """Log incoming requests with JSON structured logs."""
+        start_time = time.perf_counter()
+        access_logger = logging.getLogger("uvicorn.access")
+        try:
+            response = await call_next(request)
+        except Exception:
+            process_ms = (time.perf_counter() - start_time) * 1000
+            access_logger.exception(
+                "request failed",
+                extra={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "process_ms": round(process_ms, 2),
+                },
+            )
+            raise
+
+        process_ms = (time.perf_counter() - start_time) * 1000
+        access_logger.info(
+            "request completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "process_ms": round(process_ms, 2),
+            },
+        )
+        return response
+
+    @app.get("/")
+    def root():
+        return RedirectResponse(url="/docs")
+
+    @app.get("/healthz")
+    def healthz():
+        return {"status": "ok"}
+
+    app.include_router(releases.router)
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+    return app
+
+
+app = create_app()
+
 
 def main():
-    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
-    uvicorn.run('main:app', server_header=False, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        server_header=False,
+        reload=False,
+        log_config=None,
+    )
+
 
 if __name__ == "__main__":
     main()
