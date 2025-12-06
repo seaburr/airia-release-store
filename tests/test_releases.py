@@ -1,7 +1,16 @@
 from datetime import datetime, timedelta, timezone
+import os
+from pathlib import Path
+import sys
 
 import pytest
 from fastapi.testclient import TestClient
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+os.environ.setdefault("BASIC_AUTH_PASSWORD", "testpass")
 
 from utils.config import Settings
 from main import create_app
@@ -39,7 +48,7 @@ def test_create_release_and_retrieve_history(client):
     created = create_resp.json()
     assert created["environment"] == "production"
     assert created["versions"]["service-a"] == "1.0.0"
-    assert created["deployment_hash"]
+    assert created["deployment_id"]
 
     start = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
     end = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
@@ -52,7 +61,7 @@ def test_create_release_and_retrieve_history(client):
     assert history_resp.status_code == 200
     history = history_resp.json()
     assert len(history) == 1
-    assert history[0]["deployment_hash"] == created["deployment_hash"]
+    assert history[0]["deployment_id"] == created["deployment_id"]
 
     count_resp = client.get(
         "/api/v1/release/history/production/count",
@@ -77,14 +86,14 @@ def test_duplicate_release_returns_conflict(client):
 def test_delete_release(client):
     payload = {"environment": "dev", "versions": {"svc": "0.1.0"}}
     create_resp = client.post("/api/v1/release/create", json=payload, auth=auth())
-    deployment_hash = create_resp.json()["deployment_hash"]
+    deployment_id = create_resp.json()["deployment_id"]
 
     delete_resp = client.delete(
-        f"/api/v1/release/delete/{deployment_hash}", auth=auth()
+        f"/api/v1/release/delete/{deployment_id}", auth=auth()
     )
     assert delete_resp.status_code == 200
 
-    missing = client.delete(f"/api/v1/release/delete/{deployment_hash}", auth=auth())
+    missing = client.delete(f"/api/v1/release/delete/{deployment_id}", auth=auth())
     assert missing.status_code == 404
 
 

@@ -37,7 +37,7 @@ All API endpoints except `/` and `/healthz` require HTTP Basic auth. In Swagger/
 - `POST /api/v1/release/create` → create and persist a release bundle; deterministic `release_hash`; 409 if hash already exists
 - `GET /api/v1/release/history/{environment}?start_date=...&end_date=...` → validates timespan (must be both naive or both tz-aware; `start_date <= end_date`) and returns matching releases ordered newest-first
 - `GET /api/v1/release/history/{environment}/count?start_date=...&end_date=...` → same validation; returns count of releases in the window
-- `DELETE /api/v1/release/delete/{deployment_hash}` → deletes a release bundle by hash (404 if not found)
+- `DELETE /api/v1/release/delete/{deployment_id}` → deletes a release bundle by id (404 if not found)
 
 ### Timestamp format
 - Use ISO 8601 datetimes for `start_date` and `end_date`, e.g., `2024-01-01T00:00:00Z` or `2024-01-01T00:00:00+00:00`.
@@ -49,6 +49,8 @@ All API endpoints except `/` and `/healthz` require HTTP Basic auth. In Swagger/
 
 ## Testing
 ```bash
+# (optional) create/activate a venv
+pip install -r requirements.txt
 pytest
 ```
 

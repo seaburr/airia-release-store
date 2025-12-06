@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -29,11 +30,11 @@ def create_release(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="release_hash already exists",
+            detail="This release already exists.",
         )
 
     release_bundle = ReleaseBundle(
-        deployment_hash=release_id,
+        deployment_id=release_id,
         environment=release.environment,
         versions=release.versions,
     )
@@ -57,7 +58,7 @@ def get_release_history(
     try:
         span = Timespan(start_date=start_date, end_date=end_date)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=exc.errors())
+        raise HTTPException(status_code=400, detail=jsonable_encoder(exc.errors()))
 
     statement = (
         select(ReleaseBundle)
@@ -84,7 +85,7 @@ def get_release_history_count(
     try:
         span = Timespan(start_date=start_date, end_date=end_date)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=exc.errors())
+        raise HTTPException(status_code=400, detail=jsonable_encoder(exc.errors()))
 
     statement = (
         select(func.count())
@@ -97,14 +98,14 @@ def get_release_history_count(
     return {"environment": environment, "count": count}
 
 
-@router.delete("/delete/{deployment_hash}")
+@router.delete("/delete/{deployment_id}")
 def delete_release(
-    deployment_hash: str,
+    deployment_id: str,
     session: Session = Depends(get_session),
 ):
-    release_bundle = session.get(ReleaseBundle, deployment_hash)
+    release_bundle = session.get(ReleaseBundle, deployment_id)
     if not release_bundle:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No deployment found with deployment id {deployment_id}.")
     session.delete(release_bundle)
     session.commit()
-    return {"status": "deleted", "release_hash": deployment_hash}
+    return {"status": "deleted", "deployment_id": deployment_id}
