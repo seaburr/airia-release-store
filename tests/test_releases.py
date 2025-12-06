@@ -160,3 +160,45 @@ def test_bundle_id_is_deterministic():
 
     h3 = gen_release_bundle_hash("other-env", versions_a)
     assert h1 != h3
+
+
+def test_mixed_naive_and_aware_dates_400(client):
+    payload = {"environment": "mix", "versions": {"svc": "1.0.0"}}
+    client.post("/api/v1/release/create", json=payload, auth=auth())
+
+    start = datetime.now(timezone.utc).isoformat()
+    end = datetime.now().isoformat()  # naive
+
+    resp = client.get(
+        "/api/v1/release/history/mix",
+        params={"start_date": start, "end_date": end},
+        auth=auth(),
+    )
+    assert resp.status_code == 400
+
+
+def test_start_equals_end_boundary(client):
+    payload = {"environment": "boundary", "versions": {"svc": "1.0.0"}}
+    client.post("/api/v1/release/create", json=payload, auth=auth())
+
+    point = datetime.now(timezone.utc).isoformat()
+    resp = client.get(
+        "/api/v1/release/history/boundary",
+        params={"start_date": point, "end_date": point},
+        auth=auth(),
+    )
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+def test_invalid_versions_payload(client):
+    # versions must be mapping[str, str]; passing a list should fail validation
+    bad_payload = {"environment": "bad", "versions": ["not", "a", "dict"]}
+    resp = client.post("/api/v1/release/create", json=bad_payload, auth=auth())
+    assert resp.status_code == 422
+
+
+def test_metrics_endpoint(client):
+    resp = client.get("/metrics")
+    assert resp.status_code == 200
+    assert "http_requests_total" in resp.text or "process_resident_memory_bytes" in resp.text

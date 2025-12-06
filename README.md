@@ -62,7 +62,7 @@ docker build -t airia-release-store .
 docker run -p 8000:8000 \
   -e BASIC_AUTH_USERNAME=admin \
   -e BASIC_AUTH_PASSWORD=changeme \
-  -e DATABASE_URL="sqlite:///./airia.db" \
+  -e DATABASE_URL="sqlite:///./releasestore.db" \
   airia-release-store
 ```
 

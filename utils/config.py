@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     basic_auth_username: str = "admin"
     basic_auth_password: str
-    database_url: str = "sqlite:///./airia.db"
+    database_url: str = "sqlite:///./releasestore.db"
     logging_level: str = "INFO"
     sql_echo: bool = False
 
@@ -17,5 +17,5 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     settings = Settings()
     if not settings.basic_auth_password:
-        raise ValueError("BASIC_AUTH_PASSWORD must be set")
+        raise ValueError("BASIC_AUTH_PASSWORD must be set.")
     return settings

@@ -14,7 +14,7 @@ class Timespan(BaseModel):
         # Require both datetimes to be similarly aware/naive to avoid implicit conversions
         if (start.tzinfo is None) != (end.tzinfo is None):
             raise ValueError(
-                "start_date and end_date must both be timezone-aware or both be naive"
+                "start_date and end_date must both be timezone-aware or both be naive."
             )
 
         start_cmp = start
@@ -24,7 +24,7 @@ class Timespan(BaseModel):
             end_cmp = end.astimezone(timezone.utc)
 
         if start_cmp > end_cmp:
-            raise ValueError("start_date must be before or equal to end_date")
+            raise ValueError("start_date must be before or equal to end_date.")
 
         return self
 

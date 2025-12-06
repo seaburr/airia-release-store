@@ -16,7 +16,7 @@ from utils.bundle_id import gen_release_bundle_hash
 
 router = APIRouter(
     prefix="/api/v1/release",
-    tags=["Release History APIs"],
+    tags=["Release History API"],
     dependencies=[Depends(require_basic_auth)],
 )
 
@@ -80,7 +80,7 @@ def get_release_history(
     )
     results = session.exec(statement).all()
     logger.info(
-        "fetched release history",
+        "Fetched release history",
         extra={
             "environment": environment,
             "count": len(results),
@@ -114,7 +114,7 @@ def get_release_history_count(
     )
     count = session.exec(statement).one()
     logger.info(
-        "fetched release count",
+        "Fetched release count",
         extra={"environment": environment, "count": count},
     )
     return {"environment": environment, "count": count}
@@ -128,14 +128,14 @@ def delete_release(
     release_bundle = session.get(ReleaseBundle, deployment_id)
     if not release_bundle:
         logger.warning(
-            "delete requested for missing deployment",
+            "A non-existent release was requested to be deleted.",
             extra={"deployment_id": deployment_id},
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No deployment found with deployment id {deployment_id}.",
+            detail=f"No deployment found by deployment id {deployment_id}.",
         )
     session.delete(release_bundle)
     session.commit()
-    logger.info("deleted release", extra={"deployment_id": deployment_id})
+    logger.info("Deleted release successfully", extra={"deployment_id": deployment_id})
     return {"status": "deleted", "deployment_id": deployment_id}

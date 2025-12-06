@@ -68,7 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @app.get("/", tags=["Lifecycle APIs"])
+    @app.get("/", tags=["Lifecycle API"])
     def root():
         return RedirectResponse(url="/docs")
 
