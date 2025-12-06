@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +20,8 @@ router = APIRouter(
     dependencies=[Depends(require_basic_auth)],
 )
 
+logger = logging.getLogger(__name__)
+
 
 @router.post("/create", response_model=ReleaseBundle)
 def create_release(
@@ -28,6 +31,10 @@ def create_release(
     release_id = gen_release_bundle_hash(release.environment, release.versions)
     existing = session.get(ReleaseBundle, release_id)
     if existing:
+        logger.warning(
+            "duplicate release attempt",
+            extra={"environment": release.environment, "deployment_id": release_id},
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This release already exists.",
@@ -41,6 +48,10 @@ def create_release(
     session.add(release_bundle)
     session.commit()
     session.refresh(release_bundle)
+    logger.info(
+        "created release",
+        extra={"environment": release.environment, "deployment_id": release_id},
+    )
     return release_bundle
 
 
@@ -68,6 +79,13 @@ def get_release_history(
         .order_by(ReleaseBundle.timestamp.desc())
     )
     results = session.exec(statement).all()
+    logger.info(
+        "fetched release history",
+        extra={
+            "environment": environment,
+            "count": len(results),
+        },
+    )
     return results
 
 
@@ -95,6 +113,10 @@ def get_release_history_count(
         .where(ReleaseBundle.timestamp <= span.end_date)
     )
     count = session.exec(statement).one()
+    logger.info(
+        "fetched release count",
+        extra={"environment": environment, "count": count},
+    )
     return {"environment": environment, "count": count}
 
 
@@ -105,7 +127,15 @@ def delete_release(
 ):
     release_bundle = session.get(ReleaseBundle, deployment_id)
     if not release_bundle:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No deployment found with deployment id {deployment_id}.")
+        logger.warning(
+            "delete requested for missing deployment",
+            extra={"deployment_id": deployment_id},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No deployment found with deployment id {deployment_id}.",
+        )
     session.delete(release_bundle)
     session.commit()
+    logger.info("deleted release", extra={"deployment_id": deployment_id})
     return {"status": "deleted", "deployment_id": deployment_id}

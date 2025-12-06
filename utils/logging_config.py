@@ -51,6 +51,16 @@ def configure_logging(level: str = "INFO") -> None:
                 "propagate": False,
             },
             "fastapi": {"handlers": ["stdout"], "level": level, "propagate": False},
+            "sqlalchemy.engine": {
+                "handlers": ["stdout"],
+                "level": level,
+                "propagate": False,
+            },
+            "sqlalchemy.pool": {
+                "handlers": ["stdout"],
+                "level": level,
+                "propagate": False,
+            },
         },
     }
 

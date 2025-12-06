@@ -2,15 +2,18 @@ from contextlib import asynccontextmanager
 import logging
 import time
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.responses import RedirectResponse
 import uvicorn
 
 from utils.config import Settings, get_settings
+from database.healthcheck import HealthStatus
+from database.session import get_session
 from database.session import init_db
 from routers import releases
 from utils.logging_config import configure_logging
+from sqlmodel import Session as SQLSession
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        init_db(app_settings.database_url)
+        init_db(app_settings.database_url, echo=app_settings.sql_echo)
         yield
 
     app = FastAPI(lifespan=lifespan)
@@ -66,9 +69,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/healthz")
-    def healthz():
+    @app.get("/livez")
+    def livez():
         return {"status": "ok"}
+
+    @app.get("/readyz")
+    def readyz(session: SQLSession = Depends(get_session)):
+        try:
+            health = session.get(HealthStatus, 1)
+            if health and health.ok:
+                return {"status": "ok"}
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while attempting to connect to the database.",
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception("/readyz healthcheck failed.", exc_info=exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while attempting to connect to the database.",
+            )
 
     app.include_router(releases.router)
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")

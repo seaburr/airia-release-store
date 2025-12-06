@@ -33,7 +33,8 @@ All API endpoints except `/` and `/healthz` require HTTP Basic auth. In Swagger/
 
 ## Endpoints (current shape)
 - `GET /` → redirects to docs
-- `GET /healthz` → health check
+- `GET /livez` → liveness check
+- `GET /readyz` → readiness check (fails 500 if DB not reachable/ready)
 - `POST /api/v1/release/create` → create and persist a release bundle; deterministic `release_hash`; 409 if hash already exists
 - `GET /api/v1/release/history/{environment}?start_date=...&end_date=...` → validates timespan (must be both naive or both tz-aware; `start_date <= end_date`) and returns matching releases ordered newest-first
 - `GET /api/v1/release/history/{environment}/count?start_date=...&end_date=...` → same validation; returns count of releases in the window

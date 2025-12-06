@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     basic_auth_password: str
     database_url: str = "sqlite:///./airia.db"
     logging_level: str = "INFO"
+    sql_echo: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

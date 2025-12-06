@@ -13,7 +13,11 @@ if str(ROOT) not in sys.path:
 os.environ.setdefault("BASIC_AUTH_PASSWORD", "testpass")
 
 from utils.config import Settings
+from utils.bundle_id import gen_release_bundle_hash
+from database.healthcheck import HealthStatus
+from database import session as db_session
 from main import create_app
+from sqlmodel import Session as SQLSession
 
 
 @pytest.fixture
@@ -116,3 +120,43 @@ def test_auth_required(client):
     payload = {"environment": "secure", "versions": {"svc": "0.3.0"}}
     resp = client.post("/api/v1/release/create", json=payload)
     assert resp.status_code == 401
+
+
+def test_livez_and_readyz(client):
+    livez = client.get("/livez")
+    assert livez.status_code == 200
+    assert livez.json() == {"status": "ok"}
+
+    readyz = client.get("/readyz", auth=auth())
+    assert readyz.status_code == 200
+    assert readyz.json() == {"status": "ok"}
+
+
+def test_readyz_failure(client):
+    assert db_session.engine is not None
+    with SQLSession(db_session.engine) as session:
+        health = session.get(HealthStatus, 1)
+        health.ok = False
+        session.add(health)
+        session.commit()
+
+    resp = client.get("/readyz", auth=auth())
+    assert resp.status_code == 500
+
+    # reset to avoid impacting other tests if extended
+    with SQLSession(db_session.engine) as session:
+        health = session.get(HealthStatus, 1)
+        health.ok = True
+        session.add(health)
+        session.commit()
+
+
+def test_bundle_id_is_deterministic():
+    versions_a = {"a": "1.0.0", "b": "2.0.0"}
+    versions_b = {"b": "2.0.0", "a": "1.0.0"}
+    h1 = gen_release_bundle_hash("env", versions_a)
+    h2 = gen_release_bundle_hash("env", versions_b)
+    assert h1 == h2
+
+    h3 = gen_release_bundle_hash("other-env", versions_a)
+    assert h1 != h3
