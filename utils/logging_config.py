@@ -63,12 +63,12 @@ def configure_logging(level: str = "INFO") -> None:
             },
             "sqlalchemy.engine": {
                 "handlers": ["stdout"],
-                "level": "DEBUG",
+                "level": "WARNING",
                 "propagate": False,
             },
             "sqlalchemy.pool": {
                 "handlers": ["stdout"],
-                "level": "DEBUG",
+                "level": "WARNING",
                 "propagate": False,
             },
         },
