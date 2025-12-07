@@ -12,6 +12,7 @@ from database.session import get_session
 from utils.dependencies import require_basic_auth
 from models.release import Release
 from models.timespan import Timespan
+from models.release_output import ReleaseOutput
 from utils.bundle_id import gen_release_bundle_hash
 
 router = APIRouter(
@@ -23,7 +24,7 @@ router = APIRouter(
 logger = logging.getLogger(__name__)
 
 
-@router.post("/create", response_model=ReleaseBundle)
+@router.post("/create", response_model=ReleaseOutput)
 def create_release(
     release: Release,
     session: Session = Depends(get_session),
@@ -32,7 +33,7 @@ def create_release(
     existing = session.get(ReleaseBundle, release_id)
     if existing:
         logger.warning(
-            "duplicate release attempt",
+            "duplicate attempt to create release",
             extra={
                 "environment": release.environment,
                 "deployment_id": release_id,
@@ -58,10 +59,10 @@ def create_release(
             "deployment_id": release_id,
         },
     )
-    return release_bundle
+    return ReleaseOutput.model_validate(release_bundle, from_attributes=True)
 
 
-@router.get("/history/{environment}")
+@router.get("/history/{environment}", response_model=list[ReleaseOutput])
 def get_release_history(
     environment: str,
     start_date: datetime = Query(
@@ -95,7 +96,10 @@ def get_release_history(
             "count": len(results),
         },
     )
-    return results
+    return [
+        ReleaseOutput.model_validate(item, from_attributes=True)
+        for item in results
+    ]
 
 
 @router.get("/history/{environment}/count")
