@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
 import logging
 import time
-
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.responses import RedirectResponse
 import uvicorn
-
 from utils.config import Settings, get_settings
 from database.healthcheck import HealthStatus
 from database.session import get_session
@@ -14,6 +12,7 @@ from database.session import init_db
 from routers import releases
 from utils.logging_config import configure_logging
 from sqlmodel import Session as SQLSession
+
 
 logger = logging.getLogger(__name__)
 
