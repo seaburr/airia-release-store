@@ -7,4 +7,6 @@ class ReleaseBundle(SQLModel, table=True):
     deployment_id: str = Field(default=None, primary_key=True)
     environment: str = Field(index=True)
     versions: dict[str, str] = Field(sa_column=Column(JSON))
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

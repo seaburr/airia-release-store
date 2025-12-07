@@ -29,7 +29,9 @@ def configure_logging(level: str = "INFO") -> None:
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
-        "formatters": {"json": {"()": "utils.logging_config.JsonFormatter"}},
+        "formatters": {
+            "json": {"()": "utils.logging_config.JsonFormatter"}
+        },
         "handlers": {
             "stdout": {
                 "class": "logging.StreamHandler",
@@ -39,7 +41,11 @@ def configure_logging(level: str = "INFO") -> None:
         },
         "root": {"handlers": ["stdout"], "level": level},
         "loggers": {
-            "uvicorn": {"handlers": ["stdout"], "level": level, "propagate": False},
+            "uvicorn": {
+                "handlers": ["stdout"],
+                "level": level,
+                "propagate": False,
+            },
             "uvicorn.error": {
                 "handlers": ["stdout"],
                 "level": level,
@@ -50,7 +56,11 @@ def configure_logging(level: str = "INFO") -> None:
                 "level": level,
                 "propagate": False,
             },
-            "fastapi": {"handlers": ["stdout"], "level": level, "propagate": False},
+            "fastapi": {
+                "handlers": ["stdout"],
+                "level": level,
+                "propagate": False,
+            },
             "sqlalchemy.engine": {
                 "handlers": ["stdout"],
                 "level": level,

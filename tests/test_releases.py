@@ -12,12 +12,12 @@ if str(ROOT) not in sys.path:
 
 os.environ.setdefault("BASIC_AUTH_PASSWORD", "testpass")
 
-from utils.config import Settings
-from utils.bundle_id import gen_release_bundle_hash
-from database.healthcheck import HealthStatus
-from database import session as db_session
-from main import create_app
-from sqlmodel import Session as SQLSession
+from database import session as db_session  # noqa: E402
+from database.healthcheck import HealthStatus  # noqa: E402
+from main import create_app  # noqa: E402
+from sqlmodel import Session as SQLSession  # noqa: E402
+from utils.bundle_id import gen_release_bundle_hash  # noqa: E402
+from utils.config import Settings  # noqa: E402
 
 
 @pytest.fixture
@@ -47,7 +47,9 @@ def test_create_release_and_retrieve_history(client):
         "environment": "production",
         "versions": {"service-a": "1.0.0", "service-b": "2.0.0"},
     }
-    create_resp = client.post("/api/v1/release/create", json=payload, auth=auth())
+    create_resp = client.post(
+        "/api/v1/release/create", json=payload, auth=auth()
+    )
     assert create_resp.status_code == 200
     created = create_resp.json()
     assert created["environment"] == "production"
@@ -81,15 +83,21 @@ def test_duplicate_release_returns_conflict(client):
         "environment": "staging",
         "versions": {"service-a": "1.0.0"},
     }
-    first = client.post("/api/v1/release/create", json=payload, auth=auth())
+    first = client.post(
+        "/api/v1/release/create", json=payload, auth=auth()
+    )
     assert first.status_code == 200
-    dup = client.post("/api/v1/release/create", json=payload, auth=auth())
+    dup = client.post(
+        "/api/v1/release/create", json=payload, auth=auth()
+    )
     assert dup.status_code == 409
 
 
 def test_delete_release(client):
     payload = {"environment": "dev", "versions": {"svc": "0.1.0"}}
-    create_resp = client.post("/api/v1/release/create", json=payload, auth=auth())
+    create_resp = client.post(
+        "/api/v1/release/create", json=payload, auth=auth()
+    )
     deployment_id = create_resp.json()["deployment_id"]
 
     delete_resp = client.delete(
@@ -97,7 +105,9 @@ def test_delete_release(client):
     )
     assert delete_resp.status_code == 200
 
-    missing = client.delete(f"/api/v1/release/delete/{deployment_id}", auth=auth())
+    missing = client.delete(
+        f"/api/v1/release/delete/{deployment_id}", auth=auth()
+    )
     assert missing.status_code == 404
 
 
@@ -194,11 +204,16 @@ def test_start_equals_end_boundary(client):
 def test_invalid_versions_payload(client):
     # versions must be mapping[str, str]; passing a list should fail validation
     bad_payload = {"environment": "bad", "versions": ["not", "a", "dict"]}
-    resp = client.post("/api/v1/release/create", json=bad_payload, auth=auth())
+    resp = client.post(
+        "/api/v1/release/create", json=bad_payload, auth=auth()
+    )
     assert resp.status_code == 422
 
 
 def test_metrics_endpoint(client):
     resp = client.get("/metrics")
     assert resp.status_code == 200
-    assert "http_requests_total" in resp.text or "process_resident_memory_bytes" in resp.text
+    assert (
+        "http_requests_total" in resp.text
+        or "process_resident_memory_bytes" in resp.text
+    )

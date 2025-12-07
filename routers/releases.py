@@ -33,7 +33,10 @@ def create_release(
     if existing:
         logger.warning(
             "duplicate release attempt",
-            extra={"environment": release.environment, "deployment_id": release_id},
+            extra={
+                "environment": release.environment,
+                "deployment_id": release_id,
+            },
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -50,7 +53,10 @@ def create_release(
     session.refresh(release_bundle)
     logger.info(
         "created release",
-        extra={"environment": release.environment, "deployment_id": release_id},
+        extra={
+            "environment": release.environment,
+            "deployment_id": release_id,
+        },
     )
     return release_bundle
 
@@ -69,7 +75,10 @@ def get_release_history(
     try:
         span = Timespan(start_date=start_date, end_date=end_date)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=jsonable_encoder(exc.errors()))
+        raise HTTPException(
+            status_code=400,
+            detail=jsonable_encoder(exc.errors()),
+        )
 
     statement = (
         select(ReleaseBundle)
@@ -80,7 +89,7 @@ def get_release_history(
     )
     results = session.exec(statement).all()
     logger.info(
-        "Fetched release history",
+        "fetched release history",
         extra={
             "environment": environment,
             "count": len(results),
@@ -103,7 +112,10 @@ def get_release_history_count(
     try:
         span = Timespan(start_date=start_date, end_date=end_date)
     except ValidationError as exc:
-        raise HTTPException(status_code=400, detail=jsonable_encoder(exc.errors()))
+        raise HTTPException(
+            status_code=400,
+            detail=jsonable_encoder(exc.errors()),
+        )
 
     statement = (
         select(func.count())
@@ -114,7 +126,7 @@ def get_release_history_count(
     )
     count = session.exec(statement).one()
     logger.info(
-        "Fetched release count",
+        "fetched release count",
         extra={"environment": environment, "count": count},
     )
     return {"environment": environment, "count": count}
@@ -128,14 +140,19 @@ def delete_release(
     release_bundle = session.get(ReleaseBundle, deployment_id)
     if not release_bundle:
         logger.warning(
-            "A non-existent release was requested to be deleted.",
+            "delete requested for missing deployment",
             extra={"deployment_id": deployment_id},
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No deployment found by deployment id {deployment_id}.",
+            detail=(
+                f"No deployment found by deployment id {deployment_id}."
+            ),
         )
     session.delete(release_bundle)
     session.commit()
-    logger.info("Deleted release successfully", extra={"deployment_id": deployment_id})
+    logger.info(
+        "deleted release successfully",
+        extra={"deployment_id": deployment_id},
+    )
     return {"status": "deleted", "deployment_id": deployment_id}

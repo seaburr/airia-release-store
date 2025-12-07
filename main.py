@@ -67,15 +67,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
-    @app.get("/", tags=["Lifecycle API"])
+    @app.get("/", tags=["Lifecycle APIs"])
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/livez", tags=["Lifecycle API"])
+    @app.get("/livez", tags=["Lifecycle APIs"])
     def livez():
         return {"status": "ok"}
 
-    @app.get("/readyz", tags=["Lifecycle API"])
+    @app.get("/readyz", tags=["Lifecycle APIs"])
     def readyz(session: SQLSession = Depends(get_session)):
         try:
             health = session.get(HealthStatus, 1)
@@ -83,7 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 return {"status": "ok"}
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An error occurred while attempting to connect to the database.",
+                detail="Database not ready",
             )
         except HTTPException:
             raise
@@ -91,7 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             logger.exception("/readyz healthcheck failed.", exc_info=exc)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An error occurred while attempting to connect to the database.",
+                detail="Database not ready",
             )
 
     app.include_router(releases.router)

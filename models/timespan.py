@@ -11,10 +11,12 @@ class Timespan(BaseModel):
         start = self.start_date
         end = self.end_date
 
-        # Require both datetimes to be similarly aware/naive to avoid implicit conversions
+        # Require both datetimes to be similarly aware/naive
+        # to avoid implicit conversions
         if (start.tzinfo is None) != (end.tzinfo is None):
             raise ValueError(
-                "start_date and end_date must both be timezone-aware or both be naive."
+                "start_date and end_date must both be timezone-aware or "
+                "both be naive."
             )
 
         start_cmp = start

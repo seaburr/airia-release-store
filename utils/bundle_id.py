@@ -6,7 +6,9 @@ from typing import Mapping
 logger = logging.getLogger(__name__)
 
 
-def gen_release_bundle_hash(environment: str, versions: Mapping[str, str]) -> str:
+def gen_release_bundle_hash(
+    environment: str, versions: Mapping[str, str]
+) -> str:
     """
     Generate a deterministic hash for a release bundle by hashing a stable,
     sorted JSON representation of versions alongside the environment.
