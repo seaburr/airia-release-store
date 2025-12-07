@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN pytest
+RUN pytest --verbose
 
 EXPOSE 8000
 

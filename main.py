@@ -72,11 +72,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/livez", tags=["Lifecycle APIs"])
+    @app.get("/livez", tags=["Lifecycle API"])
     def livez():
         return {"status": "ok"}
 
-    @app.get("/readyz", tags=["Lifecycle APIs"])
+    @app.get("/readyz", tags=["Lifecycle API"])
     def readyz(session: SQLSession = Depends(get_session)):
         try:
             health = session.get(HealthStatus, 1)
