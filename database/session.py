@@ -8,10 +8,12 @@ engine = None
 
 # Prometheus metrics
 db_pool_checked_out = Gauge(
-    "db_pool_checked_out", "Current number of checked-out DB connections"
+    "db_pool_checked_out",
+    "Current number of checked-out DB connections",
 )
 db_pool_overflow = Gauge(
-    "db_pool_overflow", "Current overflow connections beyond pool_size"
+    "db_pool_overflow",
+    "Current overflow connections beyond pool_size",
 )
 db_pool_size = Gauge("db_pool_size", "Configured DB pool size")
 db_errors_total = Counter("db_errors_total", "Total DB errors", ["stage"])
@@ -32,7 +34,9 @@ def _register_pool_metrics(sql_engine):
         db_pool_overflow.set(getattr(pool, "overflow", lambda: 0)())
 
     @event.listens_for(sql_engine, "checkout")
-    def _checkout(dbapi_connection, connection_record, connection_proxy):  # noqa: ANN001
+    def _checkout(  # noqa: ANN001
+        dbapi_connection, connection_record, connection_proxy
+    ):
         pool = sql_engine.pool
         db_pool_checked_out.set(getattr(pool, "checkedout", lambda: 0)())
         db_pool_overflow.set(getattr(pool, "overflow", lambda: 0)())

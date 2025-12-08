@@ -11,8 +11,10 @@ from database.releasebundle import ReleaseBundle
 from database.session import get_session
 from utils.dependencies import require_basic_auth
 from models.release import Release
+from models.delete_output import DeleteOutput
 from models.timespan import Timespan
 from models.release_output import ReleaseOutput
+from models.count_output import CountOutput
 from utils.bundle_id import gen_release_bundle_hash
 
 router = APIRouter(
@@ -102,7 +104,7 @@ def get_release_history(
     ]
 
 
-@router.get("/history/{environment}/count")
+@router.get("/history/{environment}/count", response_model=CountOutput)
 def get_release_history_count(
     environment: str,
     start_date: datetime = Query(
@@ -133,10 +135,10 @@ def get_release_history_count(
         "fetched release count",
         extra={"environment": environment, "count": count},
     )
-    return {"environment": environment, "count": count}
+    return CountOutput(environment=environment, count=count)
 
 
-@router.delete("/delete/{deployment_id}")
+@router.delete("/delete/{deployment_id}", response_model=DeleteOutput)
 def delete_release(
     deployment_id: str,
     session: Session = Depends(get_session),
@@ -159,4 +161,4 @@ def delete_release(
         "deleted release successfully",
         extra={"deployment_id": deployment_id},
     )
-    return {"status": "deleted", "deployment_id": deployment_id}
+    return DeleteOutput(status="deleted", deployment_id=deployment_id)

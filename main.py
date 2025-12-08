@@ -10,6 +10,7 @@ from database.healthcheck import HealthStatus
 from database.session import get_session
 from database.session import init_db
 from routers import releases
+from models.status_output import StatusOutput
 from utils.logging_config import configure_logging
 from sqlmodel import Session as SQLSession
 
@@ -71,11 +72,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def root():
         return RedirectResponse(url="/docs")
 
-    @app.get("/livez", tags=["Lifecycle APIs"])
+    @app.get("/livez", tags=["Lifecycle APIs"], response_model=StatusOutput)
     def livez():
         return {"status": "ok"}
 
-    @app.get("/readyz", tags=["Lifecycle APIs"])
+    @app.get("/readyz", tags=["Lifecycle APIs"], response_model=StatusOutput)
     def readyz(session: SQLSession = Depends(get_session)):
         try:
             health = session.get(HealthStatus, 1)
